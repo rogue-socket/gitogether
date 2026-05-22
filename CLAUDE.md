@@ -66,7 +66,23 @@ are just different date-range sums over the same rows.
 every Sunday midnight and crowns a winner. All-time meta-stats: weeks won,
 longest streak.
 
-## Data model (planned)
+## Code map
+
+- `src/auth.ts` — Auth.js config (GitHub provider, Prisma adapter, `trustHost`)
+- `src/instrumentation.ts` — Next.js startup hook; registers the cron schedules
+- `src/lib/prisma.ts` — Prisma client singleton (better-sqlite3 driver adapter)
+- `src/lib/session.ts` — `requireUserId()` auth gate for pages and actions
+- `src/lib/actions.ts` — server actions (create/join group, refresh, join public)
+- `src/lib/github.ts` — GitHub GraphQL client (`fetchContributions`)
+- `src/lib/sync.ts` — `syncUser` / `syncAllUsers`: GitHub data into `DailyContribution`
+- `src/lib/sync-schedule.ts` — node-cron: 3-hourly sync (+ one on startup) and the weekly winner snapshot
+- `src/lib/score.ts` — `computeScore` (weighted) and `longestStreak`
+- `src/lib/leaderboard.ts` — `rankGroupMembers` / `getLeaderboard` + streaks
+- `src/lib/winner.ts` — weekly snapshot job, last-winner and weeks-won queries
+- Route pages under `src/app/` — `page.tsx` (login + dashboard), `groups/[id]`,
+  `groups/[id]/history`, `join/[code]`, `directory`
+
+## Data model
 
 - `User` — GitHub identity + OAuth token
 - `Group` — has an invite code and a `visibility` field (`private` or `public`)
@@ -107,8 +123,12 @@ Deferred: deployment; Discord bot as a second client; weekly email digest.
 - `npx prisma generate` — regenerate the client (also runs on `postinstall`)
 - `npx prisma studio` — browse the local SQLite database
 
-The Prisma client is generated to `src/generated/prisma` (gitignored). The
-SQLite file is `dev.db` at the repo root. No test runner is set up yet.
+The Prisma client is generated to `src/generated/prisma` (gitignored) and
+needs a driver adapter — see `src/lib/prisma.ts` (Prisma 7). Run
+`npx prisma migrate dev` after editing `schema.prisma`; it regenerates the
+client. The SQLite file is `dev.db` at the repo root. No test runner is set
+up — pure helpers (`computeScore`, `longestStreak`) are tested ad hoc with
+`node --input-type=module`.
 
 ## Session docs
 
