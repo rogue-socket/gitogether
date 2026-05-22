@@ -16,8 +16,8 @@ export function normalizeWindow(value: string | undefined): LeaderboardWindow {
   return value === "month" || value === "all" ? value : "week";
 }
 
-// Lower bound for a window, or null for all-time. Aligned to UTC midnight so
-// the window contains a whole number of daily rows.
+// Lower bound for a rolling window, or null for all-time. Aligned to UTC
+// midnight so the window contains a whole number of daily rows.
 function windowStart(window: LeaderboardWindow): Date | null {
   if (window === "all") return null;
   const start = new Date();
@@ -26,10 +26,12 @@ function windowStart(window: LeaderboardWindow): Date | null {
   return start;
 }
 
-// Ranks a group's members by their balanced score over the given window.
-export async function getLeaderboard(
+// Ranks a group's members by balanced score over [from, to). Either bound
+// may be null to leave that side open.
+export async function rankGroupMembers(
   groupId: string,
-  window: LeaderboardWindow,
+  from: Date | null,
+  to: Date | null,
 ): Promise<LeaderboardRow[]> {
   const [group, memberships] = await Promise.all([
     prisma.group.findUnique({
@@ -46,12 +48,15 @@ export async function getLeaderboard(
   ]);
 
   const memberIds = memberships.map((m) => m.userId);
-  const from = windowStart(window);
+
+  const dateFilter: { gte?: Date; lt?: Date } = {};
+  if (from) dateFilter.gte = from;
+  if (to) dateFilter.lt = to;
 
   const contributions = await prisma.dailyContribution.findMany({
     where: {
       userId: { in: memberIds },
-      ...(from ? { date: { gte: from } } : {}),
+      ...(from || to ? { date: dateFilter } : {}),
     },
     select: { userId: true, contributionCount: true },
   });
@@ -69,6 +74,13 @@ export async function getLeaderboard(
   }));
 
   rows.sort((a, b) => b.score.score - a.score.score);
-
   return rows.map((row, index) => ({ ...row, rank: index + 1 }));
+}
+
+// Rolling leaderboard for the group page's window toggles.
+export async function getLeaderboard(
+  groupId: string,
+  window: LeaderboardWindow,
+): Promise<LeaderboardRow[]> {
+  return rankGroupMembers(groupId, windowStart(window), null);
 }
