@@ -4,28 +4,41 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
+import {
+  getLeaderboard,
+  normalizeWindow,
+  type LeaderboardWindow,
+} from "@/lib/leaderboard";
+
+const WINDOWS: { key: LeaderboardWindow; label: string }[] = [
+  { key: "week", label: "This week" },
+  { key: "month", label: "This month" },
+  { key: "all", label: "All time" },
+];
 
 export default async function GroupPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ window?: string }>;
 }) {
   const userId = await requireUserId();
   const { id } = await params;
+  const window = normalizeWindow((await searchParams).window);
 
   const group = await prisma.group.findUnique({
     where: { id },
-    include: {
-      memberships: {
-        include: { user: true },
-        orderBy: { joinedAt: "asc" },
-      },
-    },
+    select: { id: true, name: true, inviteCode: true },
   });
+  if (!group) redirect("/");
 
-  if (!group || !group.memberships.some((m) => m.userId === userId)) {
-    redirect("/");
-  }
+  const membership = await prisma.membership.findUnique({
+    where: { userId_groupId: { userId, groupId: id } },
+  });
+  if (!membership) redirect("/");
+
+  const leaderboard = await getLeaderboard(id, window);
 
   const h = await headers();
   const host = h.get("host") ?? "localhost:3000";
@@ -45,6 +58,68 @@ export default async function GroupPage({
         <h1 className="text-2xl font-semibold tracking-tight">{group.name}</h1>
       </header>
 
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+            Leaderboard
+          </h2>
+          <div className="flex gap-1">
+            {WINDOWS.map((w) => (
+              <Link
+                key={w.key}
+                href={`/groups/${group.id}?window=${w.key}`}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  w.key === window
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "text-zinc-500 hover:bg-black/[.05] dark:hover:bg-white/[.06]"
+                }`}
+              >
+                {w.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <ol className="flex flex-col gap-2">
+          {leaderboard.map((row) => (
+            <li
+              key={row.userId}
+              className="flex items-center gap-3 rounded-lg border border-black/10 px-4 py-3 dark:border-white/15"
+            >
+              <span className="w-5 text-center text-sm font-semibold text-zinc-400">
+                {row.rank}
+              </span>
+              {row.image && (
+                <Image
+                  src={row.image}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="rounded-full"
+                />
+              )}
+              <div className="flex flex-1 flex-col">
+                <span className="flex items-center gap-2 font-medium">
+                  {row.name ?? "Unknown"}
+                  {row.isOwner && (
+                    <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-normal text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                      owner
+                    </span>
+                  )}
+                </span>
+                <span className="text-xs text-zinc-500">
+                  {row.score.volume} contributions · {row.score.activeDays}{" "}
+                  active days
+                </span>
+              </div>
+              <span className="text-lg font-semibold tabular-nums">
+                {row.score.score}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
           Invite link
@@ -57,33 +132,6 @@ export default async function GroupPage({
           value={inviteUrl}
           className="w-full rounded-lg border border-black/10 bg-black/[.03] px-3 py-2 font-mono text-sm dark:border-white/15 dark:bg-white/[.04]"
         />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-          Members ({group.memberships.length})
-        </h2>
-        <ul className="flex flex-col gap-2">
-          {group.memberships.map((m) => (
-            <li key={m.id} className="flex items-center gap-3">
-              {m.user.image && (
-                <Image
-                  src={m.user.image}
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                />
-              )}
-              <span className="text-sm">{m.user.name ?? "Unknown"}</span>
-              {m.userId === group.createdById && (
-                <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                  owner
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
       </section>
     </div>
   );
