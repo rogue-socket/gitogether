@@ -47,7 +47,6 @@ backlog.md
 
 # local database
 *.db
-*.db-journal
-prisma/dev.db*
+/dev.db*
 
 /src/generated/prisma

@@ -1,7 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// gitogether — v1 schema. See CLAUDE.md for the design rationale.
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +7,114 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+}
+
+// --- Auth.js (PrismaAdapter) models ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  githubLogin   String?   @unique
+  createdAt     DateTime  @default(now())
+
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Membership[]
+  contributions DailyContribution[]
+  createdGroups Group[]   @relation("GroupCreator")
+}
+
+// Stores the GitHub OAuth access_token used by background sync.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Domain models ---
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  inviteCode  String   @unique @default(cuid())
+  visibility  String   @default("private") // "private" | "public" (public directory is post-v1)
+  createdById String
+  createdAt   DateTime @default(now())
+
+  creator     User             @relation("GroupCreator", fields: [createdById], references: [id])
+  memberships Membership[]
+  snapshots   WeeklySnapshot[]
+}
+
+model Membership {
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  joinedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+// One row per user per day. v1 stores a single contribution count;
+// typed (commits/PRs/reviews) columns are a post-v1 upgrade.
+model DailyContribution {
+  id                String   @id @default(cuid())
+  userId            String
+  date              DateTime
+  contributionCount Int      @default(0)
+  syncedAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// Frozen standings for a completed week, used by the winner recap.
+model WeeklySnapshot {
+  id           String   @id @default(cuid())
+  groupId      String
+  weekStart    DateTime
+  winnerUserId String?
+  standings    String // JSON-encoded ranking snapshot
+  createdAt    DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, weekStart])
 }

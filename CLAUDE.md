@@ -4,10 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Pre-implementation. The repo currently holds only a README and this file. The
-v1 spec below was agreed in a design session; no code has been scaffolded yet.
-Once the Next.js app is created, add the build/lint/test commands to the
-"Commands" section.
+Early implementation. The app is scaffolded (Next.js + Prisma + Auth.js) and
+the data model is migrated. The GitHub login UI and the GitHub data sync are
+not built yet. See `backlog.md` for what's next.
 
 ## What gitogether is
 
@@ -100,8 +99,16 @@ second client; weekly email digest; typed (weighted) scoring.
 
 ## Commands
 
-To be added once the Next.js project is scaffolded (dev server, build, lint,
-Prisma migrate/generate, test runner).
+- `npm run dev` — dev server (Turbopack) at http://localhost:3000
+- `npm run build` — production build (also type-checks)
+- `npm run lint` — ESLint
+- `npx tsc --noEmit` — type-check without building
+- `npx prisma migrate dev --name <name>` — create and apply a migration
+- `npx prisma generate` — regenerate the client (also runs on `postinstall`)
+- `npx prisma studio` — browse the local SQLite database
+
+The Prisma client is generated to `src/generated/prisma` (gitignored). The
+SQLite file is `dev.db` at the repo root. No test runner is set up yet.
 
 ## Session docs
 
