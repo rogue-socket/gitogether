@@ -10,10 +10,13 @@ export async function createGroup(formData: FormData) {
   const userId = await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Group name is required");
+  const visibility =
+    formData.get("visibility") === "public" ? "public" : "private";
 
   const group = await prisma.group.create({
     data: {
       name,
+      visibility,
       createdById: userId,
       memberships: { create: { userId } },
     },
@@ -34,6 +37,21 @@ export async function joinGroup(code: string) {
   });
 
   redirect(`/groups/${group.id}`);
+}
+
+// Joins a group straight from the public directory (no invite code).
+export async function joinPublicGroup(groupId: string) {
+  const userId = await requireUserId();
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group || group.visibility !== "public") redirect("/directory");
+
+  await prisma.membership.upsert({
+    where: { userId_groupId: { userId, groupId } },
+    create: { userId, groupId },
+    update: {},
+  });
+
+  redirect(`/groups/${groupId}`);
 }
 
 export async function refreshMyData() {

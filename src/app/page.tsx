@@ -96,9 +96,17 @@ export default async function Home() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-          Your groups
-        </h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+            Your groups
+          </h2>
+          <Link
+            href="/directory"
+            className="shrink-0 text-sm text-zinc-500 transition-colors hover:text-black dark:hover:text-white"
+          >
+            Browse public groups →
+          </Link>
+        </div>
         {groups.length === 0 ? (
           <p className="text-sm text-zinc-500">
             You&apos;re not in any groups yet. Create one below.
@@ -127,20 +135,31 @@ export default async function Home() {
         <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
           Create a group
         </h2>
-        <form action={createGroup} className="flex gap-2">
-          <input
-            name="name"
-            required
-            maxLength={60}
-            placeholder="Group name"
-            className="flex-1 rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30 dark:border-white/15 dark:focus:border-white/40"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
-            Create
-          </button>
+        <form action={createGroup} className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              name="name"
+              required
+              maxLength={60}
+              placeholder="Group name"
+              className="flex-1 rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/30 dark:border-white/15 dark:focus:border-white/40"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            >
+              Create
+            </button>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-zinc-500">
+            <input
+              type="checkbox"
+              name="visibility"
+              value="public"
+              className="accent-black dark:accent-white"
+            />
+            Make public — listed in the directory, anyone can join
+          </label>
         </form>
       </section>
     </div>

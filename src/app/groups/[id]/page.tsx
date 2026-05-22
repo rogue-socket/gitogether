@@ -32,7 +32,7 @@ export default async function GroupPage({
 
   const group = await prisma.group.findUnique({
     where: { id },
-    select: { id: true, name: true, inviteCode: true },
+    select: { id: true, name: true, inviteCode: true, visibility: true },
   });
   if (!group) redirect("/");
 
@@ -64,7 +64,14 @@ export default async function GroupPage({
           ← All groups
         </Link>
         <div className="flex items-baseline justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">{group.name}</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            {group.name}
+            {group.visibility === "public" && (
+              <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-normal text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                public
+              </span>
+            )}
+          </h1>
           <Link
             href={`/groups/${group.id}/history`}
             className="shrink-0 text-sm text-zinc-500 transition-colors hover:text-black dark:hover:text-white"
