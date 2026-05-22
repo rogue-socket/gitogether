@@ -28,3 +28,24 @@ export function computeScore(
     score: volume + activeDays * CONSISTENCY_BONUS,
   };
 }
+
+// Longest run of consecutive calendar days with at least one contribution.
+export function longestStreak(
+  days: ReadonlyArray<{ date: Date; contributionCount: number }>,
+): number {
+  const DAY_MS = 86_400_000;
+  const activeTimes = days
+    .filter((d) => d.contributionCount > 0)
+    .map((d) => d.date.getTime())
+    .sort((a, b) => a - b);
+
+  let best = 0;
+  let run = 0;
+  let prev: number | null = null;
+  for (const time of activeTimes) {
+    run = prev !== null && time - prev === DAY_MS ? run + 1 : 1;
+    if (run > best) best = run;
+    prev = time;
+  }
+  return best;
+}

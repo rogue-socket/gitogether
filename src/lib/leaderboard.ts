@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { computeScore, type Score } from "@/lib/score";
+import { computeScore, longestStreak, type Score } from "@/lib/score";
 
 export type LeaderboardWindow = "week" | "month" | "all";
 
@@ -83,4 +83,28 @@ export async function getLeaderboard(
   window: LeaderboardWindow,
 ): Promise<LeaderboardRow[]> {
   return rankGroupMembers(groupId, windowStart(window), null);
+}
+
+// All-time longest contribution streak for each member of a group.
+export async function getLongestStreaks(
+  groupId: string,
+): Promise<Map<string, number>> {
+  const memberships = await prisma.membership.findMany({
+    where: { groupId },
+    select: { userId: true },
+  });
+  const memberIds = memberships.map((m) => m.userId);
+
+  const rows = await prisma.dailyContribution.findMany({
+    where: { userId: { in: memberIds } },
+    select: { userId: true, date: true, contributionCount: true },
+  });
+
+  const byUser = new Map<string, { date: Date; contributionCount: number }[]>();
+  for (const id of memberIds) byUser.set(id, []);
+  for (const row of rows) byUser.get(row.userId)?.push(row);
+
+  const streaks = new Map<string, number>();
+  for (const [id, days] of byUser) streaks.set(id, longestStreak(days));
+  return streaks;
 }

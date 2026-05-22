@@ -6,10 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import {
   getLeaderboard,
+  getLongestStreaks,
   normalizeWindow,
   type LeaderboardWindow,
 } from "@/lib/leaderboard";
 import { getLastWeekWinner, getWeeksWon } from "@/lib/winner";
+import { CopyButton } from "./CopyButton";
 
 const WINDOWS: { key: LeaderboardWindow; label: string }[] = [
   { key: "week", label: "This week" },
@@ -39,10 +41,11 @@ export default async function GroupPage({
   });
   if (!membership) redirect("/");
 
-  const [leaderboard, lastWinner, weeksWon] = await Promise.all([
+  const [leaderboard, lastWinner, weeksWon, streaks] = await Promise.all([
     getLeaderboard(id, window),
     getLastWeekWinner(id),
     getWeeksWon(id),
+    getLongestStreaks(id),
   ]);
 
   const h = await headers();
@@ -60,7 +63,15 @@ export default async function GroupPage({
         >
           ← All groups
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{group.name}</h1>
+        <div className="flex items-baseline justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight">{group.name}</h1>
+          <Link
+            href={`/groups/${group.id}/history`}
+            className="shrink-0 text-sm text-zinc-500 transition-colors hover:text-black dark:hover:text-white"
+          >
+            Past weeks →
+          </Link>
+        </div>
       </header>
 
       {lastWinner && (
@@ -108,6 +119,7 @@ export default async function GroupPage({
         <ol className="flex flex-col gap-2">
           {leaderboard.map((row) => {
             const wins = weeksWon.get(row.userId) ?? 0;
+            const streak = streaks.get(row.userId) ?? 0;
             return (
               <li
                 key={row.userId}
@@ -142,6 +154,7 @@ export default async function GroupPage({
                   <span className="text-xs text-zinc-500">
                     {row.score.volume} contributions · {row.score.activeDays}{" "}
                     active days
+                    {streak >= 2 && ` · ${streak}-day streak`}
                   </span>
                 </div>
                 <span className="text-lg font-semibold tabular-nums">
@@ -160,11 +173,14 @@ export default async function GroupPage({
         <p className="text-sm text-zinc-500">
           Share this link with friends to add them to the group.
         </p>
-        <input
-          readOnly
-          value={inviteUrl}
-          className="w-full rounded-lg border border-black/10 bg-black/[.03] px-3 py-2 font-mono text-sm dark:border-white/15 dark:bg-white/[.04]"
-        />
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={inviteUrl}
+            className="w-full flex-1 rounded-lg border border-black/10 bg-black/[.03] px-3 py-2 font-mono text-sm dark:border-white/15 dark:bg-white/[.04]"
+          />
+          <CopyButton value={inviteUrl} />
+        </div>
       </section>
     </div>
   );
