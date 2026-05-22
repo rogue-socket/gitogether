@@ -1,31 +1,62 @@
-// Balanced leaderboard score: rewards both raw output (volume) and showing
-// up regularly (consistency). Computed on read so the formula can change
-// without a data backfill. CONSISTENCY_BONUS is the tuning knob.
+// Balanced leaderboard score: weighted output volume + a showing-up bonus.
+// Computed on read so weights can change without a data backfill.
 export const CONSISTENCY_BONUS = 10; // points per active day
 
-export type Score = {
-  volume: number; // total contributions in the window
-  activeDays: number; // days with at least one contribution
-  score: number; // volume + activeDays * CONSISTENCY_BONUS
+// Per-type weights. PRs and reviews are higher-effort and harder to game
+// than raw commits.
+export const WEIGHTS = {
+  commits: 1,
+  pullRequests: 3,
+  reviews: 2,
+  issues: 1,
+} as const;
+
+export type ScoredDay = {
+  contributionCount: number;
+  commits: number;
+  pullRequests: number;
+  reviews: number;
+  issues: number;
 };
 
-// Reduces a set of daily contribution rows (already filtered to a time
-// window by the caller) into a single balanced score.
-export function computeScore(
-  days: ReadonlyArray<{ contributionCount: number }>,
-): Score {
-  let volume = 0;
+export type Score = {
+  commits: number;
+  pullRequests: number;
+  reviews: number;
+  issues: number;
+  activeDays: number;
+  score: number;
+};
+
+// Reduces a window of daily contribution rows into a weighted balanced score.
+export function computeScore(days: ReadonlyArray<ScoredDay>): Score {
+  let commits = 0;
+  let pullRequests = 0;
+  let reviews = 0;
+  let issues = 0;
   let activeDays = 0;
 
   for (const day of days) {
-    volume += day.contributionCount;
+    commits += day.commits;
+    pullRequests += day.pullRequests;
+    reviews += day.reviews;
+    issues += day.issues;
     if (day.contributionCount > 0) activeDays += 1;
   }
 
+  const weighted =
+    commits * WEIGHTS.commits +
+    pullRequests * WEIGHTS.pullRequests +
+    reviews * WEIGHTS.reviews +
+    issues * WEIGHTS.issues;
+
   return {
-    volume,
+    commits,
+    pullRequests,
+    reviews,
+    issues,
     activeDays,
-    score: volume + activeDays * CONSISTENCY_BONUS,
+    score: weighted + activeDays * CONSISTENCY_BONUS,
   };
 }
 

@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { computeScore, longestStreak, type Score } from "@/lib/score";
+import {
+  computeScore,
+  longestStreak,
+  type Score,
+  type ScoredDay,
+} from "@/lib/score";
 
 export type LeaderboardWindow = "week" | "month" | "all";
 
@@ -58,10 +63,17 @@ export async function rankGroupMembers(
       userId: { in: memberIds },
       ...(from || to ? { date: dateFilter } : {}),
     },
-    select: { userId: true, contributionCount: true },
+    select: {
+      userId: true,
+      contributionCount: true,
+      commits: true,
+      pullRequests: true,
+      reviews: true,
+      issues: true,
+    },
   });
 
-  const byUser = new Map<string, { contributionCount: number }[]>();
+  const byUser = new Map<string, ScoredDay[]>();
   for (const id of memberIds) byUser.set(id, []);
   for (const c of contributions) byUser.get(c.userId)?.push(c);
 

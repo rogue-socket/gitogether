@@ -150,11 +150,16 @@ export default async function GroupPage({
                         {wins} {wins === 1 ? "win" : "wins"}
                       </span>
                     )}
+                    {streak >= 2 && (
+                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-normal text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">
+                        {streak}-day streak
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs text-zinc-500">
-                    {row.score.volume} contributions · {row.score.activeDays}{" "}
-                    active days
-                    {streak >= 2 && ` · ${streak}-day streak`}
+                    {row.score.commits} commits · {row.score.pullRequests} PRs ·{" "}
+                    {row.score.reviews} reviews · {row.score.activeDays} active
+                    days
                   </span>
                 </div>
                 <span className="text-lg font-semibold tabular-nums">

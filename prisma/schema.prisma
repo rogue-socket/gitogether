@@ -91,13 +91,17 @@ model Membership {
   @@unique([userId, groupId])
 }
 
-// One row per user per day. v1 stores a single contribution count;
-// typed (commits/PRs/reviews) columns are a post-v1 upgrade.
+// One row per user per day. contributionCount is the day's total; the typed
+// columns split it for weighted scoring.
 model DailyContribution {
   id                String   @id @default(cuid())
   userId            String
   date              DateTime
   contributionCount Int      @default(0)
+  commits           Int      @default(0)
+  pullRequests      Int      @default(0)
+  reviews           Int      @default(0)
+  issues            Int      @default(0)
   syncedAt          DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

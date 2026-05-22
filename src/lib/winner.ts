@@ -35,8 +35,6 @@ export async function snapshotCompletedWeek(): Promise<{ snapshots: number }> {
       name: r.name,
       rank: r.rank,
       score: r.score.score,
-      volume: r.score.volume,
-      activeDays: r.score.activeDays,
     }));
 
     await prisma.weeklySnapshot.upsert({

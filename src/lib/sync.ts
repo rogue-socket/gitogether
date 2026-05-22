@@ -32,10 +32,17 @@ export async function syncUser(userId: string): Promise<{ days: number }> {
     }),
     ...days.map((day) => {
       const date = new Date(`${day.date}T00:00:00.000Z`);
+      const counts = {
+        contributionCount: day.contributionCount,
+        commits: day.commits,
+        pullRequests: day.pullRequests,
+        reviews: day.reviews,
+        issues: day.issues,
+      };
       return prisma.dailyContribution.upsert({
         where: { userId_date: { userId, date } },
-        create: { userId, date, contributionCount: day.count },
-        update: { contributionCount: day.count, syncedAt: new Date() },
+        create: { userId, date, ...counts },
+        update: { ...counts, syncedAt: new Date() },
       });
     }),
   ]);

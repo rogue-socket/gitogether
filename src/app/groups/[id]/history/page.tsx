@@ -8,8 +8,6 @@ type Standing = {
   name: string | null;
   rank: number;
   score: number;
-  volume: number;
-  activeDays: number;
 };
 
 function weekLabel(weekStart: Date): string {
@@ -96,9 +94,6 @@ export default async function HistoryPage({
                         {s.rank}
                       </span>
                       <span className="flex-1">{s.name ?? "Unknown"}</span>
-                      <span className="text-xs text-zinc-500">
-                        {s.volume} contributions
-                      </span>
                       <span className="font-semibold tabular-nums">
                         {s.score}
                       </span>
