@@ -6,4 +6,6 @@ import { prisma } from "@/lib/prisma";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [GitHub],
+  // Self-hosted behind a proxy (Railway/Fly): trust the forwarded host.
+  trustHost: true,
 });
