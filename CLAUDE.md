@@ -4,9 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Early implementation. The app is scaffolded (Next.js + Prisma + Auth.js) and
-the data model is migrated. The GitHub login UI and the GitHub data sync are
-not built yet. See `backlog.md` for what's next.
+v1 feature-complete. Login, groups (create / invite link / join), GitHub
+contribution sync, the per-group leaderboard with time-window toggles, and the
+weekly winner recap are all built; the production build is clean. Not yet
+done: deployment, and creating a real GitHub OAuth app to exercise the full
+signed-in flow end to end. See `backlog.md`.
 
 ## What gitogether is
 
