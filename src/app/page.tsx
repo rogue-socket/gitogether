@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { createGroup } from "@/lib/actions";
+import { createGroup, refreshMyData } from "@/lib/actions";
+import { timeAgo } from "@/lib/format";
 
 export default async function Home() {
   const session = await auth();
@@ -42,6 +43,12 @@ export default async function Home() {
     orderBy: { createdAt: "desc" },
   });
 
+  const latestSync = await prisma.dailyContribution.findFirst({
+    where: { userId: user.id },
+    orderBy: { syncedAt: "desc" },
+    select: { syncedAt: true },
+  });
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-6 py-12">
       <header className="flex items-center justify-between">
@@ -71,6 +78,22 @@ export default async function Home() {
           </form>
         </div>
       </header>
+
+      <section className="flex flex-wrap items-center gap-3">
+        <form action={refreshMyData}>
+          <button
+            type="submit"
+            className="rounded-lg border border-black/10 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/[.03] dark:border-white/15 dark:hover:bg-white/[.04]"
+          >
+            Refresh my GitHub data
+          </button>
+        </form>
+        <span className="text-sm text-zinc-500">
+          {latestSync
+            ? `Last synced ${timeAgo(latestSync.syncedAt)}`
+            : "Not synced yet"}
+        </span>
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">

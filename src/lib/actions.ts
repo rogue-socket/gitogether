@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
+import { syncUser } from "@/lib/sync";
 
 export async function createGroup(formData: FormData) {
   const userId = await requireUserId();
@@ -32,4 +34,10 @@ export async function joinGroup(code: string) {
   });
 
   redirect(`/groups/${group.id}`);
+}
+
+export async function refreshMyData() {
+  const userId = await requireUserId();
+  await syncUser(userId);
+  revalidatePath("/", "layout");
 }
